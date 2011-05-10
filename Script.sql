@@ -2,15 +2,16 @@ SET @OLD_UNIQUE_CHECKS=@@UNIQUE_CHECKS, UNIQUE_CHECKS=0;
 SET @OLD_FOREIGN_KEY_CHECKS=@@FOREIGN_KEY_CHECKS, FOREIGN_KEY_CHECKS=0;
 SET @OLD_SQL_MODE=@@SQL_MODE, SQL_MODE='TRADITIONAL';
 
-CREATE SCHEMA IF NOT EXISTS `mydb` DEFAULT CHARACTER SET latin1 COLLATE latin1_swedish_ci ;
-USE `mydb` ;
+DROP SCHEMA IF EXISTS `boletos` ;
+CREATE SCHEMA IF NOT EXISTS `boletos` DEFAULT CHARACTER SET latin1 COLLATE latin1_swedish_ci ;
+USE `boletos` ;
 
 -- -----------------------------------------------------
--- Table `mydb`.`servicios`
+-- Table `boletos`.`servicios`
 -- -----------------------------------------------------
-DROP TABLE IF EXISTS `mydb`.`servicios` ;
+DROP TABLE IF EXISTS `boletos`.`servicios` ;
 
-CREATE  TABLE IF NOT EXISTS `mydb`.`servicios` (
+CREATE  TABLE IF NOT EXISTS `boletos`.`servicios` (
   `idServicios` INT NOT NULL AUTO_INCREMENT COMMENT 'Identificador del servicio' ,
   `descripcion` VARCHAR(45) NULL COMMENT 'Texto para identificar el servicio' ,
   PRIMARY KEY (`idServicios`) )
@@ -19,20 +20,41 @@ COMMENT = 'TIpo de servicio del autobus (Primera, Normal, etc.)' ;
 
 
 -- -----------------------------------------------------
--- Table `mydb`.`autobuses`
+-- Table `boletos`.`lineas`
 -- -----------------------------------------------------
-DROP TABLE IF EXISTS `mydb`.`autobuses` ;
+DROP TABLE IF EXISTS `boletos`.`lineas` ;
 
-CREATE  TABLE IF NOT EXISTS `mydb`.`autobuses` (
-  `idAutobus` INT NOT NULL AUTO_INCREMENT COMMENT 'Identificador del autobus' ,
+CREATE  TABLE IF NOT EXISTS `boletos`.`lineas` (
+  `idLinea` INT NOT NULL AUTO_INCREMENT ,
+  `descripcion` VARCHAR(45) NULL ,
+  PRIMARY KEY (`idLinea`) ,
+  UNIQUE INDEX `nombre_UNIQUE` (`descripcion` ASC) )
+ENGINE = InnoDB;
+
+
+-- -----------------------------------------------------
+-- Table `boletos`.`autobuses`
+-- -----------------------------------------------------
+DROP TABLE IF EXISTS `boletos`.`autobuses` ;
+
+CREATE  TABLE IF NOT EXISTS `boletos`.`autobuses` (
   `matricula` VARCHAR(45) NOT NULL COMMENT 'Matricula del autobus' ,
   `numeroAsientos` INT NOT NULL COMMENT 'Numero de asientos del autobus' ,
   `idServicios` INT NOT NULL COMMENT 'Tipo de servicio que ofrece el autobus' ,
-  PRIMARY KEY (`idAutobus`) ,
+  `marca` VARCHAR(45) NULL ,
+  `modelo` VARCHAR(45) NULL ,
+  `linea` INT NOT NULL ,
   INDEX `fk_autobuses_servicios1` (`idServicios` ASC) ,
+  PRIMARY KEY (`matricula`) ,
+  INDEX `fk_autobuses_lineas1` (`linea` ASC) ,
   CONSTRAINT `fk_autobuses_servicios1`
     FOREIGN KEY (`idServicios` )
-    REFERENCES `mydb`.`servicios` (`idServicios` )
+    REFERENCES `boletos`.`servicios` (`idServicios` )
+    ON DELETE NO ACTION
+    ON UPDATE NO ACTION,
+  CONSTRAINT `fk_autobuses_lineas1`
+    FOREIGN KEY (`linea` )
+    REFERENCES `boletos`.`lineas` (`idLinea` )
     ON DELETE NO ACTION
     ON UPDATE NO ACTION)
 ENGINE = InnoDB, 
@@ -40,51 +62,52 @@ COMMENT = 'Catalogo de autobuses' ;
 
 
 -- -----------------------------------------------------
--- Table `mydb`.`terminales`
+-- Table `boletos`.`terminales`
 -- -----------------------------------------------------
-DROP TABLE IF EXISTS `mydb`.`terminales` ;
+DROP TABLE IF EXISTS `boletos`.`terminales` ;
 
-CREATE  TABLE IF NOT EXISTS `mydb`.`terminales` (
+CREATE  TABLE IF NOT EXISTS `boletos`.`terminales` (
   `idTerminal` INT NOT NULL AUTO_INCREMENT COMMENT 'Identificador de terminal' ,
-  `nombre` VARCHAR(50) NULL COMMENT 'Nombre de la terminal' ,
+  `nombre` VARCHAR(50) NOT NULL COMMENT 'Nombre de la terminal' ,
+  `direccion` VARCHAR(450) NULL ,
   PRIMARY KEY (`idTerminal`) )
 ENGINE = InnoDB, 
 COMMENT = 'Terminales de origen y destino' ;
 
 
 -- -----------------------------------------------------
--- Table `mydb`.`estados_asientos`
+-- Table `boletos`.`tipos_asientos`
 -- -----------------------------------------------------
-DROP TABLE IF EXISTS `mydb`.`estados_asientos` ;
+DROP TABLE IF EXISTS `boletos`.`tipos_asientos` ;
 
-CREATE  TABLE IF NOT EXISTS `mydb`.`estados_asientos` (
-  `idEstado` INT NOT NULL COMMENT 'Identificador del estado' ,
-  `descripcion` VARCHAR(45) NULL COMMENT 'Texto mostrado que corresponde al estado' ,
-  PRIMARY KEY (`idEstado`) )
+CREATE  TABLE IF NOT EXISTS `boletos`.`tipos_asientos` (
+  `idTipoAsiento` INT NOT NULL AUTO_INCREMENT COMMENT 'Identificador del tipo de asiento' ,
+  `descripcion` VARCHAR(45) NOT NULL COMMENT 'Tipo de asiento\nPasillo\nVentanilla' ,
+  PRIMARY KEY (`idTipoAsiento`) )
 ENGINE = InnoDB, 
-COMMENT = 'Catalogo con los posibles estados del asiento de un autobus' ;
+COMMENT = 'tipo de asiento que tiene el autobus' ;
 
 
 -- -----------------------------------------------------
--- Table `mydb`.`asientos`
+-- Table `boletos`.`asientos`
 -- -----------------------------------------------------
-DROP TABLE IF EXISTS `mydb`.`asientos` ;
+DROP TABLE IF EXISTS `boletos`.`asientos` ;
 
-CREATE  TABLE IF NOT EXISTS `mydb`.`asientos` (
-  `idAutobus` INT NOT NULL COMMENT 'Autobus al que pertenecen los asientos' ,
+CREATE  TABLE IF NOT EXISTS `boletos`.`asientos` (
+  `matricula` VARCHAR(45) NOT NULL ,
   `idAsiento` INT NOT NULL COMMENT 'Identificador del asiento' ,
-  `estado_asiento` INT NOT NULL COMMENT 'Estado en el que se encuentra el asiento (Disponible, Reservado, etc.)' ,
-  PRIMARY KEY (`idAsiento`, `idAutobus`) ,
-  INDEX `fk_asientos_estados_asientos` (`estado_asiento` ASC) ,
-  INDEX `fk_asientos_autobuses1` (`idAutobus` ASC) ,
-  CONSTRAINT `fk_asientos_estados_asientos`
-    FOREIGN KEY (`estado_asiento` )
-    REFERENCES `mydb`.`estados_asientos` (`idEstado` )
+  `tipoAsiento` INT NOT NULL ,
+  PRIMARY KEY (`matricula`, `idAsiento`) ,
+  INDEX `fk_asientos_autobuses1` (`matricula` ASC) ,
+  INDEX `fk_asientos_tipos_asientos1` (`tipoAsiento` ASC) ,
+  CONSTRAINT `fk_asientos_autobuses1`
+    FOREIGN KEY (`matricula` )
+    REFERENCES `boletos`.`autobuses` (`matricula` )
     ON DELETE NO ACTION
     ON UPDATE NO ACTION,
-  CONSTRAINT `fk_asientos_autobuses1`
-    FOREIGN KEY (`idAutobus` )
-    REFERENCES `mydb`.`autobuses` (`idAutobus` )
+  CONSTRAINT `fk_asientos_tipos_asientos1`
+    FOREIGN KEY (`tipoAsiento` )
+    REFERENCES `boletos`.`tipos_asientos` (`idTipoAsiento` )
     ON DELETE NO ACTION
     ON UPDATE NO ACTION)
 ENGINE = InnoDB, 
@@ -92,13 +115,26 @@ COMMENT = 'Asientos que conforman un autobus, se tiene registro de los ' /* comm
 
 
 -- -----------------------------------------------------
--- Table `mydb`.`itinerarios`
+-- Table `boletos`.`estados_asientos`
 -- -----------------------------------------------------
-DROP TABLE IF EXISTS `mydb`.`itinerarios` ;
+DROP TABLE IF EXISTS `boletos`.`estados_asientos` ;
 
-CREATE  TABLE IF NOT EXISTS `mydb`.`itinerarios` (
+CREATE  TABLE IF NOT EXISTS `boletos`.`estados_asientos` (
+  `idEstado` INT NOT NULL AUTO_INCREMENT COMMENT 'Identificador del estado' ,
+  `descripcion` VARCHAR(45) NULL COMMENT 'Texto mostrado que corresponde al estado' ,
+  PRIMARY KEY (`idEstado`) )
+ENGINE = InnoDB, 
+COMMENT = 'Catalogo con los posibles estados del asiento de un autobus' ;
+
+
+-- -----------------------------------------------------
+-- Table `boletos`.`itinerarios`
+-- -----------------------------------------------------
+DROP TABLE IF EXISTS `boletos`.`itinerarios` ;
+
+CREATE  TABLE IF NOT EXISTS `boletos`.`itinerarios` (
   `idItinerario` INT NOT NULL AUTO_INCREMENT COMMENT 'Identificador de itinerario' ,
-  `diaHora` DATE NOT NULL COMMENT 'hora en que se puede realizar el viaje' ,
+  `diaHora` DATETIME NOT NULL COMMENT 'hora en que se puede realizar el viaje' ,
   `idTerminalOrigen` INT NOT NULL COMMENT 'Terminal de salida' ,
   `idTerminalDestino` INT NOT NULL COMMENT 'Terminal destino' ,
   `precio` DECIMAL(10) NULL COMMENT 'Precio' ,
@@ -107,12 +143,12 @@ CREATE  TABLE IF NOT EXISTS `mydb`.`itinerarios` (
   INDEX `fk_itinerarios_terminales2` (`idTerminalDestino` ASC) ,
   CONSTRAINT `fk_itinerarios_terminales1`
     FOREIGN KEY (`idTerminalOrigen` )
-    REFERENCES `mydb`.`terminales` (`idTerminal` )
+    REFERENCES `boletos`.`terminales` (`idTerminal` )
     ON DELETE NO ACTION
     ON UPDATE NO ACTION,
   CONSTRAINT `fk_itinerarios_terminales2`
     FOREIGN KEY (`idTerminalDestino` )
-    REFERENCES `mydb`.`terminales` (`idTerminal` )
+    REFERENCES `boletos`.`terminales` (`idTerminal` )
     ON DELETE NO ACTION
     ON UPDATE NO ACTION)
 ENGINE = InnoDB, 
@@ -120,11 +156,11 @@ COMMENT = 'Registro de las posibles viajes por dia' ;
 
 
 -- -----------------------------------------------------
--- Table `mydb`.`pasajeros`
+-- Table `boletos`.`pasajeros`
 -- -----------------------------------------------------
-DROP TABLE IF EXISTS `mydb`.`pasajeros` ;
+DROP TABLE IF EXISTS `boletos`.`pasajeros` ;
 
-CREATE  TABLE IF NOT EXISTS `mydb`.`pasajeros` (
+CREATE  TABLE IF NOT EXISTS `boletos`.`pasajeros` (
   `idPasajero` INT NOT NULL AUTO_INCREMENT ,
   `nombre` VARCHAR(45) NULL ,
   `apellidoPaterno` VARCHAR(45) NULL ,
@@ -134,11 +170,11 @@ ENGINE = InnoDB;
 
 
 -- -----------------------------------------------------
--- Table `mydb`.`conductores`
+-- Table `boletos`.`conductores`
 -- -----------------------------------------------------
-DROP TABLE IF EXISTS `mydb`.`conductores` ;
+DROP TABLE IF EXISTS `boletos`.`conductores` ;
 
-CREATE  TABLE IF NOT EXISTS `mydb`.`conductores` (
+CREATE  TABLE IF NOT EXISTS `boletos`.`conductores` (
   `idConductor` INT NOT NULL AUTO_INCREMENT COMMENT 'Identificador del conductor' ,
   `nombre` VARCHAR(45) NOT NULL COMMENT 'Nombre del conductor' ,
   `apellidoPaterno` VARCHAR(45) NOT NULL COMMENT 'Apellido paterno del conductor' ,
@@ -149,35 +185,35 @@ COMMENT = 'Catalogo de conductores que realizan los viajes' ;
 
 
 -- -----------------------------------------------------
--- Table `mydb`.`viajes`
+-- Table `boletos`.`viajes`
 -- -----------------------------------------------------
-DROP TABLE IF EXISTS `mydb`.`viajes` ;
+DROP TABLE IF EXISTS `boletos`.`viajes` ;
 
-CREATE  TABLE IF NOT EXISTS `mydb`.`viajes` (
+CREATE  TABLE IF NOT EXISTS `boletos`.`viajes` (
   `idViajes` INT NOT NULL AUTO_INCREMENT COMMENT 'Identificador del viaje' ,
   `fecha` DATETIME NOT NULL COMMENT 'Dia en que se realiza el viaje' ,
-  `idAutobus` INT NOT NULL COMMENT 'Autobus que realiza el viaje' ,
   `horaSalida` TIME NULL COMMENT 'Hora de salida' ,
   `horaLlegada` TIME NULL COMMENT 'Hora de llegada' ,
   `idItinerario` INT NOT NULL COMMENT 'Itinerario al que corresponde el viaje' ,
   `idConductor` INT NOT NULL COMMENT 'Conductor que realiza el viaje' ,
+  `autobuses_matricula` VARCHAR(45) NOT NULL ,
   PRIMARY KEY (`idViajes`) ,
-  INDEX `fk_viajes_autobuses1` (`idAutobus` ASC) ,
   INDEX `fk_viajes_itinerarios1` (`idItinerario` ASC) ,
   INDEX `fk_viajes_conductores1` (`idConductor` ASC) ,
-  CONSTRAINT `fk_viajes_autobuses1`
-    FOREIGN KEY (`idAutobus` )
-    REFERENCES `mydb`.`autobuses` (`idAutobus` )
-    ON DELETE NO ACTION
-    ON UPDATE NO ACTION,
+  INDEX `fk_viajes_autobuses1` (`autobuses_matricula` ASC) ,
   CONSTRAINT `fk_viajes_itinerarios1`
     FOREIGN KEY (`idItinerario` )
-    REFERENCES `mydb`.`itinerarios` (`idItinerario` )
+    REFERENCES `boletos`.`itinerarios` (`idItinerario` )
     ON DELETE NO ACTION
     ON UPDATE NO ACTION,
   CONSTRAINT `fk_viajes_conductores1`
     FOREIGN KEY (`idConductor` )
-    REFERENCES `mydb`.`conductores` (`idConductor` )
+    REFERENCES `boletos`.`conductores` (`idConductor` )
+    ON DELETE NO ACTION
+    ON UPDATE NO ACTION,
+  CONSTRAINT `fk_viajes_autobuses1`
+    FOREIGN KEY (`autobuses_matricula` )
+    REFERENCES `boletos`.`autobuses` (`matricula` )
     ON DELETE NO ACTION
     ON UPDATE NO ACTION)
 ENGINE = InnoDB, 
@@ -185,31 +221,38 @@ COMMENT = 'Viajes realizados segun los itinerarios' ;
 
 
 -- -----------------------------------------------------
--- Table `mydb`.`pasajeros_viajes`
+-- Table `boletos`.`pasajeros_viajes`
 -- -----------------------------------------------------
-DROP TABLE IF EXISTS `mydb`.`pasajeros_viajes` ;
+DROP TABLE IF EXISTS `boletos`.`pasajeros_viajes` ;
 
-CREATE  TABLE IF NOT EXISTS `mydb`.`pasajeros_viajes` (
+CREATE  TABLE IF NOT EXISTS `boletos`.`pasajeros_viajes` (
   `idViaje` INT NOT NULL COMMENT 'Identificador del viaje' ,
   `idPasajero` INT NOT NULL COMMENT 'Identificador del pasajero' ,
-  `idAutobus` INT NOT NULL COMMENT 'Autobus' ,
-  `idAsiento` INT NOT NULL COMMENT 'Asiento asignado al pasajero en el autobus' ,
+  `estadoAsiento` INT NOT NULL ,
+  `matricula` VARCHAR(45) NOT NULL ,
+  `idAsiento` INT NOT NULL ,
   PRIMARY KEY (`idViaje`, `idPasajero`) ,
   INDEX `fk_pasajeros_viajes_pasajeros1` (`idPasajero` ASC) ,
-  INDEX `fk_pasajeros_viajes_asientos1` (`idAsiento` ASC, `idAutobus` ASC) ,
+  INDEX `fk_pasajeros_viajes_estados_asientos1` (`estadoAsiento` ASC) ,
+  INDEX `fk_pasajeros_viajes_asientos1` (`matricula` ASC, `idAsiento` ASC) ,
   CONSTRAINT `fk_pasajeros_viajes_viajes1`
     FOREIGN KEY (`idViaje` )
-    REFERENCES `mydb`.`viajes` (`idViajes` )
+    REFERENCES `boletos`.`viajes` (`idViajes` )
     ON DELETE NO ACTION
     ON UPDATE NO ACTION,
   CONSTRAINT `fk_pasajeros_viajes_pasajeros1`
     FOREIGN KEY (`idPasajero` )
-    REFERENCES `mydb`.`pasajeros` (`idPasajero` )
+    REFERENCES `boletos`.`pasajeros` (`idPasajero` )
+    ON DELETE NO ACTION
+    ON UPDATE NO ACTION,
+  CONSTRAINT `fk_pasajeros_viajes_estados_asientos1`
+    FOREIGN KEY (`estadoAsiento` )
+    REFERENCES `boletos`.`estados_asientos` (`idEstado` )
     ON DELETE NO ACTION
     ON UPDATE NO ACTION,
   CONSTRAINT `fk_pasajeros_viajes_asientos1`
-    FOREIGN KEY (`idAsiento` , `idAutobus` )
-    REFERENCES `mydb`.`asientos` (`idAsiento` , `idAutobus` )
+    FOREIGN KEY (`matricula` , `idAsiento` )
+    REFERENCES `boletos`.`asientos` (`matricula` , `idAsiento` )
     ON DELETE NO ACTION
     ON UPDATE NO ACTION)
 ENGINE = InnoDB, 
@@ -217,21 +260,21 @@ COMMENT = 'Pasajeros que realizan el viaje' ;
 
 
 -- -----------------------------------------------------
--- Table `mydb`.`pagos`
+-- Table `boletos`.`pagos`
 -- -----------------------------------------------------
-DROP TABLE IF EXISTS `mydb`.`pagos` ;
+DROP TABLE IF EXISTS `boletos`.`pagos` ;
 
-CREATE  TABLE IF NOT EXISTS `mydb`.`pagos` (
+CREATE  TABLE IF NOT EXISTS `boletos`.`pagos` (
   `idPago` INT NOT NULL AUTO_INCREMENT COMMENT 'Identificador del pago' ,
-  `idViaje` INT NOT NULL COMMENT 'Viaje al que corresponde el pago' ,
-  `idPasajero` INT NOT NULL COMMENT 'Pasajero que realiza el pago' ,
   `importe` DECIMAL(10) NULL DEFAULT 0.0 COMMENT 'Importe del pago realizado' ,
   `fechaPago` DATETIME NULL COMMENT 'Fecha en que se realiza el pago' ,
-  PRIMARY KEY (`idPago`, `idViaje`, `idPasajero`) ,
-  INDEX `fk_pagos_pasajeros_viajes1` (`idViaje` ASC, `idPasajero` ASC) ,
+  `pasajeros_viajes_idViaje` INT NOT NULL ,
+  `pasajeros_viajes_idPasajero` INT NOT NULL ,
+  PRIMARY KEY (`idPago`, `pasajeros_viajes_idViaje`, `pasajeros_viajes_idPasajero`) ,
+  INDEX `fk_pagos_pasajeros_viajes1` (`pasajeros_viajes_idViaje` ASC, `pasajeros_viajes_idPasajero` ASC) ,
   CONSTRAINT `fk_pagos_pasajeros_viajes1`
-    FOREIGN KEY (`idViaje` , `idPasajero` )
-    REFERENCES `mydb`.`pasajeros_viajes` (`idViaje` , `idPasajero` )
+    FOREIGN KEY (`pasajeros_viajes_idViaje` , `pasajeros_viajes_idPasajero` )
+    REFERENCES `boletos`.`pasajeros_viajes` (`idViaje` , `idPasajero` )
     ON DELETE NO ACTION
     ON UPDATE NO ACTION)
 ENGINE = InnoDB, 
