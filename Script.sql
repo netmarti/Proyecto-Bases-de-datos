@@ -40,20 +40,20 @@ DROP TABLE IF EXISTS `boletos`.`autobuses` ;
 CREATE  TABLE IF NOT EXISTS `boletos`.`autobuses` (
   `matricula` VARCHAR(45) NOT NULL COMMENT 'Matricula del autobus' ,
   `numeroAsientos` INT NOT NULL COMMENT 'Numero de asientos del autobus' ,
-  `idServicios` INT NOT NULL COMMENT 'Tipo de servicio que ofrece el autobus' ,
+  `idServicio` INT NOT NULL COMMENT 'Tipo de servicio que ofrece el autobus' ,
   `marca` VARCHAR(45) NULL ,
   `modelo` VARCHAR(45) NULL ,
-  `linea` INT NOT NULL ,
-  INDEX `fk_autobuses_servicios1` (`idServicios` ASC) ,
+  `idLinea` INT NOT NULL ,
+  INDEX `fk_autobuses_servicios1` (`idServicio` ASC) ,
   PRIMARY KEY (`matricula`) ,
-  INDEX `fk_autobuses_lineas1` (`linea` ASC) ,
+  INDEX `fk_autobuses_lineas1` (`idLinea` ASC) ,
   CONSTRAINT `fk_autobuses_servicios1`
-    FOREIGN KEY (`idServicios` )
+    FOREIGN KEY (`idServicio` )
     REFERENCES `boletos`.`servicios` (`idServicios` )
     ON DELETE NO ACTION
     ON UPDATE NO ACTION,
   CONSTRAINT `fk_autobuses_lineas1`
-    FOREIGN KEY (`linea` )
+    FOREIGN KEY (`idLinea` )
     REFERENCES `boletos`.`lineas` (`idLinea` )
     ON DELETE NO ACTION
     ON UPDATE NO ACTION)
@@ -134,7 +134,8 @@ DROP TABLE IF EXISTS `boletos`.`itinerarios` ;
 
 CREATE  TABLE IF NOT EXISTS `boletos`.`itinerarios` (
   `idItinerario` INT NOT NULL AUTO_INCREMENT COMMENT 'Identificador de itinerario' ,
-  `diaHora` DATETIME NOT NULL COMMENT 'hora en que se puede realizar el viaje' ,
+  `dia` INT NOT NULL ,
+  `hora` TIME NOT NULL COMMENT 'hora en que se puede realizar el viaje' ,
   `idTerminalOrigen` INT NOT NULL COMMENT 'Terminal de salida' ,
   `idTerminalDestino` INT NOT NULL COMMENT 'Terminal destino' ,
   `precio` DECIMAL(10) NULL COMMENT 'Precio' ,
@@ -190,17 +191,17 @@ COMMENT = 'Catalogo de conductores que realizan los viajes' ;
 DROP TABLE IF EXISTS `boletos`.`viajes` ;
 
 CREATE  TABLE IF NOT EXISTS `boletos`.`viajes` (
-  `idViajes` INT NOT NULL AUTO_INCREMENT COMMENT 'Identificador del viaje' ,
+  `idViaje` INT NOT NULL AUTO_INCREMENT COMMENT 'Identificador del viaje' ,
   `fecha` DATETIME NOT NULL COMMENT 'Dia en que se realiza el viaje' ,
   `horaSalida` TIME NULL COMMENT 'Hora de salida' ,
   `horaLlegada` TIME NULL COMMENT 'Hora de llegada' ,
   `idItinerario` INT NOT NULL COMMENT 'Itinerario al que corresponde el viaje' ,
   `idConductor` INT NOT NULL COMMENT 'Conductor que realiza el viaje' ,
-  `autobuses_matricula` VARCHAR(45) NOT NULL ,
-  PRIMARY KEY (`idViajes`) ,
+  `autobusMatricula` VARCHAR(45) NOT NULL ,
+  PRIMARY KEY (`idViaje`) ,
   INDEX `fk_viajes_itinerarios1` (`idItinerario` ASC) ,
   INDEX `fk_viajes_conductores1` (`idConductor` ASC) ,
-  INDEX `fk_viajes_autobuses1` (`autobuses_matricula` ASC) ,
+  INDEX `fk_viajes_autobuses1` (`autobusMatricula` ASC) ,
   CONSTRAINT `fk_viajes_itinerarios1`
     FOREIGN KEY (`idItinerario` )
     REFERENCES `boletos`.`itinerarios` (`idItinerario` )
@@ -212,7 +213,7 @@ CREATE  TABLE IF NOT EXISTS `boletos`.`viajes` (
     ON DELETE NO ACTION
     ON UPDATE NO ACTION,
   CONSTRAINT `fk_viajes_autobuses1`
-    FOREIGN KEY (`autobuses_matricula` )
+    FOREIGN KEY (`autobusMatricula` )
     REFERENCES `boletos`.`autobuses` (`matricula` )
     ON DELETE NO ACTION
     ON UPDATE NO ACTION)
@@ -237,7 +238,7 @@ CREATE  TABLE IF NOT EXISTS `boletos`.`pasajeros_viajes` (
   INDEX `fk_pasajeros_viajes_asientos1` (`matricula` ASC, `idAsiento` ASC) ,
   CONSTRAINT `fk_pasajeros_viajes_viajes1`
     FOREIGN KEY (`idViaje` )
-    REFERENCES `boletos`.`viajes` (`idViajes` )
+    REFERENCES `boletos`.`viajes` (`idViaje` )
     ON DELETE NO ACTION
     ON UPDATE NO ACTION,
   CONSTRAINT `fk_pasajeros_viajes_pasajeros1`
